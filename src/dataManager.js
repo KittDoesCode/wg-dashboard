@@ -147,22 +147,13 @@ exports.saveWireguardConfig = (server_config, cb) => {
 			}
 		);
 
-		// write new coredns config
-		fs.writeFile("/etc/coredns/Corefile", coredns_config, err => {
+		// restart coredns
++       wgHelper.restartCoreDNS(err => {
 			if (err) {
 				cb(err);
 				return;
 			}
-
-			// restart coredns
-			wgHelper.restartCoreDNS(err => {
-				if (err) {
-					cb(err);
-					return;
-				}
-
-				cb(null);
-			});
+			cb(null);
 		});
 	});
 };

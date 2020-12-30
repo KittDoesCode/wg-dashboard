@@ -274,7 +274,7 @@
 									<div class="col-md-4 col-sm-12">
 										<input type="text" id="dns" class="form-control" value="{{ config.dns }}" disabled>
 										<label for="dns">DNS <i class="fas fa-info-circle fa-sm" data-toggle="tooltip"
-												data-placement="top" title="DNS server ip that will be used by peers to resolve domain names"></i></label>
+												data-placement="top" title="DNS server ip that requests will be forwarded to"></i></label>
 									</div>
 								</div>
 
@@ -302,20 +302,11 @@
 								<div class="row mb-3">
 									<div class="col-md-4 col-sm-12">
 										<div class="btn-group inputToggleContainer" id="dns_over_tls">
-											{% if config.dns_over_tls %}
-												<button class="btn gradientOff" id="disableTLSoverDNS" disabled>OFF</button>
-												<button class="btn gradientOn" id="enableTLSoverDNS" disabled>ON</button>
-											{% else %}
-												<button class="btn gradientOn" id="disableTLSoverDNS" disabled>OFF</button>
-												<button class="btn gradientOff" id="enableTLSoverDNS" disabled>ON</button>
-											{% endif %}
-
 										</div>
-										<label for="dns_over_tls" style="display: block;"><span>Enable DNS over TLS <i class="fas fa-info-circle fa-sm"
-												data-toggle="tooltip" data-placement="top"
-												title="Toggle usage of DNS over TLS - this basically encrypts dns queries before they are sent to the configured DNS server"></i></span>
+										<label for="dns_over_tls" style="display: block;"><span>
+												</span>
 												<br />
-												<span><a target="_blank" href="https://developers.cloudflare.com/1.1.1.1/dns-over-tls/">read more here</a></span>
+												<span></span>
 										</label>
 									</div>
 

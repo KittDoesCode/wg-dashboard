@@ -217,7 +217,7 @@ exports.makeDashboardPublic = (state, cb) => {
 };
 
 exports.restartCoreDNS = cb => {
-	child_process.exec(`systemctl restart coredns`, (err, stdout, stderr) => {
+	child_process.exec(`systemctl restart go-dnsmasq`, (err, stdout, stderr) => {
 		if (err || stderr) {
 			cb(err);
 			return;

@@ -1,38 +1,24 @@
 #!/bin/bash
+
+#########################################
+#
+# Not really maintained, and there are a few things to do:
+#   1. Prompt for the IP address.
+#   2. Prompt for the default search domain.
+#
+#########################################
+
 set -e
 
 if [[ "$EUID" -ne 0 ]]; then
-	echo "Sorry, this script must be ran as root"
+	echo "Sorry, this script must be run as root"
 	echo "Maybe try this:"
-	echo "curl https://raw.githubusercontent.com/wg-dashboard/wg-dashboard/master/install_script.sh | sudo bash"
+	echo "curl https://raw.githubusercontent.com/WashboardCode/wg-dashboard/master/install_script.sh | sudo bash"
 	exit
 fi
 
-# i = distributor id, s = short, gives us name of the os ("Ubuntu", "Raspbian", ...)
-if [[ "$(lsb_release -is)" == "Raspbian" ]]; then
-	# needed for new kernel
-	apt-get update -y
-	apt-get upgrade -y
-
-	# install required build tools
-	apt-get install -y raspberrypi-kernel-headers libmnl-dev libelf-dev build-essential ufw
-	cd /opt
-	# get the latest stable snapshot
-	curl -L https://git.zx2c4.com/WireGuard/snapshot/WireGuard-0.0.20190601.tar.xz --output WireGuard.tar.xz
-	# create directory
-	mkdir -p WireGuard
-	# unzip tarball
-	tar xf WireGuard.tar.xz -C WireGuard --strip-components=1
-	# delete tarball
-	rm -f WireGuard.tar.xz
-	# go into source folder
-	cd WireGuard/src
-	# build and install wireguard
-	make
-	make install
-	# go back to home folder
-	cd ~
-elif [[ "$(lsb_release -is)" == "Ubuntu" ]]; then
+# i = distributor id, s = short, gives us name of the os ("Ubuntu", "Debian", ...)
+if [[ "$(lsb_release -is)" == "Ubuntu" ]]; then
 	# needed for add-apt-repository
 	apt-get install -y software-properties-common
 	# add wireguard repository to apt
@@ -76,7 +62,7 @@ cd /opt
 rm -rf wg-dashboard
 rm -rf wg-dashboard.tar.gz
 # download wg-dashboard latest release
-curl -L https://github.com/$(wget https://github.com/wg-dashboard/wg-dashboard/releases/latest -O - | egrep '/.*/.*/.*tar.gz' -o) --output wg-dashboard.tar.gz
+curl -L https://github.com/$(wget https://github.com/WashboardCode/wg-dashboard/releases/latest -O - | egrep '/.*/.*/.*tar.gz' -o) --output wg-dashboard.tar.gz
 # create directory for dashboard
 mkdir -p wg-dashboard
 # unzip wg-dashboard
@@ -116,73 +102,77 @@ ufw --force enable
 ufw allow 58210
 # enable port 53 in firewall for dns
 ufw allow in on wg0 to any port 53
+# Allow access to web server
+ufw allow from any to any port 10000 proto tcp
 
-# make and enter coredns folder
-mkdir -p /etc/coredns
-cd /etc/coredns
-if [[ "$(lsb_release -is)" == "Raspbian" ]]; then
+# Install go-dnsmasq
+cd /usr/local/sbin
+if [[ "$(lsb_release -is)" == "Ubuntu" ]]; then
 	# download coredns
-	curl -L https://github.com/coredns/coredns/releases/download/v1.5.1/coredns_1.5.1_linux_arm.tgz --output coredns.tgz
-elif [[ "$(lsb_release -is)" == "Ubuntu" ]]; then
-	# download coredns
-	curl -L https://github.com/coredns/coredns/releases/download/v1.5.1/coredns_1.5.1_linux_amd64.tgz --output coredns.tgz
+	curl -L https://github.com/janeczku/go-dnsmasq/releases/download/1.0.7/go-dnsmasq_linux-amd64 --output go-dnsmasq
 elif [[ "$(lsb_release -is)" == "Debian" ]]; then
 	# download coredns
-	curl -L https://github.com/coredns/coredns/releases/download/v1.5.1/coredns_1.5.1_linux_amd64.tgz --output coredns.tgz
+	curl -L https://github.com/janeczku/go-dnsmasq/releases/download/1.0.7/go-dnsmasq_linux-amd64 --output go-dnsmasq
 fi
-# unzip and delete tar
-tar -xzf coredns.tgz
-rm -f coredns.tgz
-# move coredns to correct directory
-mv coredns /usr/bin/coredns
-# write default coredns config
-echo ". {
-	forward . tls://1.1.1.1 {
-		tls_servername tls.cloudflare-dns.com
-		health_check 10s
-	}
 
-	cache
-	errors
-}" > /etc/coredns/Corefile
+# change permissions
+chmod 744 /usr/local/sbin/go-dnsmasq
+
 # write autostart config
 echo "
 [Unit]
-Description=CoreDNS DNS Server
-Documentation=https://coredns.io/manual/toc/
+Description=Go-dnsmasq DNS Server
+Documentation=https://github.com/janeczku/go-dnsmasq
 After=network.target
 
 [Service]
 LimitNOFILE=8192
-ExecStart=/usr/bin/coredns -conf /etc/coredns/Corefile -cpu 10%
+ExecStart=/usr/local/sbin/go-dnsmasq \
+    --listen 0.0.0.0 \
+    --search-domains [ad.domain] \
+    --enable-search \
+    --nameservers IP.AD.DR.ESS
 Restart=on-failure
 
 [Install]
-WantedBy=multi-user.target" > /etc/systemd/system/coredns.service
+WantedBy=multi-user.target" > /etc/systemd/system/go-dnsmasq.service
+
 # disable systemd-resolved from startup
 systemctl disable systemd-resolved
 # stop systemd-resolved service
 systemctl stop systemd-resolved
-# enable coredns on system start
-systemctl enable coredns
-# start coredns
-systemctl start coredns
+# enable go-dnsmasq on system start
+systemctl enable go-dnsmasq
+# start go-dnsmasq
+systemctl start go-dnsmasq
 
+# ** To be completed **
+# Requires prompting for hostname, domain, etc.
+# Recommendations (for now)
+#echo "We currently recommend allowing port 80 (http) into this server to get a Let's Encrypt TLS certificate"
+echo "Security audits have not been performed on the dashboard, so we don't recommend exposing it to the Internet"
+# install nginx
+#apt install nginx
+# install site config
+#
+# install acme
+#curl https://get.acme.sh | sh
+# get certificate.
 
 echo ""
 echo ""
 echo "=========================================================================="
 echo ""
 echo "> Done! WireGuard and wg-dashboard have been successfully installed"
-echo "> You can now connect to the dashboard via ssh tunnel by visiting:"
-echo ""
-echo -e "\t\thttp://localhost:3000"
-echo ""
-echo "> You can open an ssh tunnel from your local machine with this command:"
-echo ""
-echo -e "\t\tssh -L 3000:localhost:3000 <your_vps_user>@<your_vps_ip>"
-echo ""
-echo "> Please save this command for later, as you will need it to access the dashboard"
+#echo "> You can now connect to the dashboard via ssh tunnel by visiting:"
+#echo ""
+#echo -e "\t\thttp://localhost:3000"
+#echo ""
+#echo "> You can open an ssh tunnel from your local machine with this command:"
+#echo ""
+#echo -e "\t\tssh -L 3000:localhost:3000 <your_vps_user>@<your_vps_ip>"
+#echo ""
+#echo "> Please save this command for later, as you will need it to access the dashboard"
 echo ""
 echo "=========================================================================="
 echo ""
