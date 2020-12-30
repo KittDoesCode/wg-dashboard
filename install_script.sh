@@ -13,7 +13,7 @@ set -e
 if [[ "$EUID" -ne 0 ]]; then
 	echo "Sorry, this script must be run as root"
 	echo "Maybe try this:"
-	echo "curl https://raw.githubusercontent.com/WashboardCode/wg-dashboard/master/install_script.sh | sudo bash"
+	echo "curl https://raw.githubusercontent.com/KittDoesCode/wg-dashboard/master/install_script.sh | sudo bash"
 	exit
 fi
 
@@ -62,7 +62,7 @@ cd /opt
 rm -rf wg-dashboard
 rm -rf wg-dashboard.tar.gz
 # download wg-dashboard latest release
-curl -L https://github.com/$(wget https://github.com/WashboardCode/wg-dashboard/releases/latest -O - | egrep '/.*/.*/.*tar.gz' -o) --output wg-dashboard.tar.gz
+curl -L https://github.com/$(wget https://github.com/KittDoesCode/wg-dashboard/releases/latest -O - | egrep '/.*/.*/.*tar.gz' -o) --output wg-dashboard.tar.gz
 # create directory for dashboard
 mkdir -p wg-dashboard
 # unzip wg-dashboard
